@@ -1,0 +1,14 @@
+{
+  // Browser code only. Deliberately no "node" types: importing node:fs or
+  // touching `process` in src/ must be a compile error, since this code ships
+  // to browsers. The Vite config needs node types, so it typechecks separately
+  // via tsconfig.node.json.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@repo/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "React canvas editor: compose a workflow, run it, watch it stream",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/workflow": "workspace:*",
+    "@xyflow/react": "^12.8.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^5.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.14"
+  }
+}

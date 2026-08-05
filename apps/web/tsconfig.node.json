@@ -1,0 +1,9 @@
+{
+  // The Vite config: runs in Node, never shipped to the browser.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts"]
+}
