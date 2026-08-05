@@ -72,8 +72,20 @@ export function openSseChannel(req: Request, res: Response, onClose: () => void)
     },
     send(event) {
       if (closed) return;
-      // `id:` is the cursor the browser echoes back as Last-Event-ID.
-      res.write(`id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+
+      // Two deliberate details in these three lines:
+      //
+      // `id:` is the resume cursor — the browser echoes the last one it saw
+      // back as `Last-Event-ID` on reconnect, and that is the whole mechanism.
+      //
+      // There is **no `event:` line**, and that is not an omission. Writing
+      // `event: node.updated` makes EventSource dispatch a *typed* event, which
+      // is delivered only to `addEventListener('node.updated', …)` — never to
+      // `onmessage`. A client with a single `onmessage` handler silently
+      // receives nothing, while curl shows a perfectly well-formed stream. The
+      // discriminant lives in the JSON payload's `type` instead, where the
+      // client's reducer already switches on it.
+      res.write(`id: ${event.seq}\ndata: ${JSON.stringify(event)}\n\n`);
     },
     comment(text) {
       if (!closed) res.write(`: ${text}\n\n`);

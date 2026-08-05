@@ -193,6 +193,28 @@ describe('GET /api/runs/:runId/events', () => {
     expect(response.text.startsWith('retry: ')).toBe(true);
   });
 
+  it('tags every frame with an id, which is what makes Last-Event-ID work', async () => {
+    const runId = await startRun();
+    const response = await request(app).get(`/api/runs/${runId}/events`);
+
+    const dataFrames = response.text.split('\n\n').filter((frame) => frame.includes('data: '));
+    expect(dataFrames.length).toBeGreaterThan(0);
+    expect(dataFrames.every((frame) => /(^|\n)id: \d+/.test(frame))).toBe(true);
+  });
+
+  it('emits no `event:` line, so a plain onmessage handler receives everything', async () => {
+    // Regression test for a bug that cost real debugging time and is invisible
+    // to curl: an `event: node.updated` line makes EventSource dispatch a typed
+    // event, which never reaches `onmessage`. The stream looks perfect in a
+    // terminal and delivers nothing to the browser.
+    const runId = await startRun();
+    const response = await request(app).get(`/api/runs/${runId}/events`);
+
+    expect(response.text).not.toMatch(/(^|\n)event:/);
+    // The discriminant lives in the payload instead.
+    expect(parseEvents(response.text).every((event) => typeof event.type === 'string')).toBe(true);
+  });
+
   it('404s for an unknown run before opening a stream', async () => {
     const response = await request(app).get('/api/runs/nope/events').expect(404);
 
