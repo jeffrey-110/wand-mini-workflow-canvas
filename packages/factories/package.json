@@ -1,0 +1,19 @@
+{
+  "name": "@repo/factories",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Graph fixtures for tests: named topologies with overridable configs",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
