@@ -1,0 +1,1173 @@
+/*
+ * One stylesheet, no CSS-in-JS and no utility framework.
+ *
+ * The app is one screen with a fixed three-column layout, so a component
+ * library would be more configuration than code. Everything runtime-variable —
+ * node kind, run status — is expressed as a `data-` attribute and styled here,
+ * which keeps the components free of colour decisions and means the whole
+ * palette is greppable in one file.
+ *
+ * Dark-first, because that's what a builder tool that sits open all day usually
+ * is, with a light scheme behind `prefers-color-scheme`.
+ */
+
+:root {
+  color-scheme: dark light;
+
+  --bg: #0b0d12;
+  --bg-panel: #12151c;
+  --bg-raised: #171b24;
+  --bg-input: #0e1117;
+  --line: #262c38;
+  --line-soft: #1d222c;
+
+  --ink: #e7eaf0;
+  --ink-dim: #9aa3b2;
+  --ink-faint: #6b7484;
+
+  --accent: #6a8dff;
+  --accent-ink: #0b0d12;
+
+  /* Node kinds. Also read by the minimap via var(--kind-*). */
+  --kind-input: #4ea1ff;
+  --kind-transform: #a78bfa;
+  --kind-output: #34d399;
+
+  /* Run statuses. */
+  --queued: #6b7484;
+  --running: #4ea1ff;
+  --succeeded: #34d399;
+  --failed: #f87171;
+  --skipped: #d9a441;
+  --canceled: #7b8494;
+  --warn: #d9a441;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 12px 32px rgb(0 0 0 / 45%);
+  --font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f5f8;
+    --bg-panel: #fff;
+    --bg-raised: #fff;
+    --bg-input: #fff;
+    --line: #dfe3ea;
+    --line-soft: #eaedf2;
+
+    --ink: #171b24;
+    --ink-dim: #5b6472;
+    --ink-faint: #858e9c;
+
+    --accent: #3b63d8;
+    --accent-ink: #fff;
+
+    --kind-input: #2b7fd4;
+    --kind-transform: #7c56e0;
+    --kind-output: #16a06e;
+
+    --running: #2b7fd4;
+    --succeeded: #16a06e;
+    --failed: #d33b3b;
+    --skipped: #b57d16;
+    --shadow: 0 12px 32px rgb(20 26 40 / 12%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ul {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------------------------------------------------------------- layout -- */
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app__body {
+  display: grid;
+  /* Fixed rails, fluid middle: the canvas takes every pixel the panels don't
+     need, which is the right priority for a builder. */
+  grid-template-columns: 232px 1fr 312px;
+  min-height: 0;
+}
+
+.app__canvas {
+  position: relative;
+  min-width: 0;
+  border-inline: 1px solid var(--line);
+}
+
+/* --------------------------------------------------------------- toolbar -- */
+
+.toolbar {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.toolbar__brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 200px;
+}
+
+.toolbar__mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(140deg, var(--kind-input), var(--kind-transform) 55%, var(--kind-output));
+}
+
+.toolbar h1 {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.toolbar__brand p {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.toolbar__status {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  max-width: 460px;
+}
+
+.toolbar__status-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.toolbar__counts {
+  color: var(--ink-dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.toolbar__elapsed {
+  margin-left: auto;
+  color: var(--ink-faint);
+  font: var(--mono);
+  /* Tabular figures stop the elapsed counter jittering as digits change. */
+  font-variant-numeric: tabular-nums;
+}
+
+.toolbar__actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.toolbar__actions .field {
+  gap: 3px;
+  min-width: 150px;
+}
+
+/* ------------------------------------------------------------- controls -- */
+
+.btn {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--ink-faint);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn--primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn--danger {
+  border-color: color-mix(in srgb, var(--failed) 45%, transparent);
+  color: var(--failed);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--failed) 12%, var(--bg-raised));
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink-faint);
+  /* Not the mono stack: monospace fonts routinely lack ⌘, ↵ and ⌫, and fall
+     back to a tofu box. The UI stack has them. */
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.btn--primary kbd {
+  border-color: color-mix(in srgb, var(--accent-ink) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-ink) 16%, transparent);
+  color: color-mix(in srgb, var(--accent-ink) 75%, transparent);
+}
+
+.field {
+  display: grid;
+  gap: 5px;
+}
+
+.field label {
+  color: var(--ink-faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible,
+.field select:focus-visible,
+.btn:focus-visible,
+.palette__item:focus-visible,
+.issues__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.field__hint {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, currentcolor 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentcolor 12%, transparent);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.pill[data-tone='idle'] {
+  color: var(--ink-faint);
+}
+.pill[data-tone='running'] {
+  color: var(--running);
+}
+.pill[data-tone='succeeded'] {
+  color: var(--succeeded);
+}
+.pill[data-tone='failed'] {
+  color: var(--failed);
+}
+.pill[data-tone='canceled'] {
+  color: var(--canceled);
+}
+.pill[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.progress {
+  overflow: hidden;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.progress__fill {
+  display: block;
+  height: 100%;
+  background: currentcolor;
+  transition: width 220ms ease;
+}
+
+.progress[data-tone='running'] {
+  color: var(--running);
+}
+.progress[data-tone='succeeded'] {
+  color: var(--succeeded);
+}
+.progress[data-tone='failed'] {
+  color: var(--failed);
+}
+.progress[data-tone='canceled'] {
+  color: var(--canceled);
+}
+
+/* --------------------------------------------------------------- palette -- */
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Extra bottom padding: the last shortcut row sits at the window edge
+     otherwise, which reads as clipped. */
+  padding: 14px 12px 18px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+}
+
+.palette__title,
+.palette__footer h3 {
+  color: var(--ink-faint);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.palette__item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+}
+
+.palette__item:hover:not(:disabled) {
+  border-color: var(--ink-faint);
+}
+
+.palette__item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.palette__dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-radius: 3px;
+}
+
+.palette__item[data-kind='input'] .palette__dot {
+  background: var(--kind-input);
+}
+.palette__item[data-kind='transform'] .palette__dot {
+  background: var(--kind-transform);
+}
+.palette__item[data-kind='output'] .palette__dot {
+  background: var(--kind-output);
+}
+
+.palette__body {
+  display: grid;
+  gap: 2px;
+}
+
+.palette__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.palette__blurb {
+  color: var(--ink-faint);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.palette__footer {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* The list is the grid and each row is `display: contents`, so the keycap
+   column sizes to the widest combination across *all* rows and every label
+   starts at the same x. A per-row flex can't do that, which is why the labels
+   used to stagger. */
+.palette__footer li {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.palette__footer li span {
+  margin-left: 4px;
+}
+
+/* ---------------------------------------------------------------- canvas -- */
+
+.canvas {
+  position: relative;
+  height: 100%;
+}
+
+.react-flow {
+  background: var(--bg);
+}
+
+.react-flow__background path,
+.react-flow__background circle {
+  fill: var(--line);
+}
+
+.react-flow__controls,
+.react-flow__minimap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: none;
+  background: var(--bg-panel);
+}
+
+.react-flow__controls-button {
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+  fill: var(--ink-dim);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--bg-raised);
+}
+
+.react-flow__attribution {
+  background: transparent;
+  font-size: 10px;
+}
+
+.react-flow__attribution a {
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------------ node -- */
+
+.wf-node {
+  position: relative;
+  width: 220px;
+  padding: 9px 11px 8px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--kind);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.wf-node[data-kind='input'] {
+  --kind: var(--kind-input);
+}
+.wf-node[data-kind='transform'] {
+  --kind: var(--kind-transform);
+}
+.wf-node[data-kind='output'] {
+  --kind: var(--kind-output);
+}
+
+.wf-node[data-selected] {
+  border-color: var(--accent);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px var(--accent);
+}
+
+/* Status owns the border colour during a run, so the canvas reads as a status
+   board at a glance without anyone having to look at a legend. */
+.wf-node[data-status='running'] {
+  border-color: var(--running);
+}
+.wf-node[data-status='succeeded'] {
+  border-color: color-mix(in srgb, var(--succeeded) 60%, var(--line));
+}
+.wf-node[data-status='failed'] {
+  border-color: var(--failed);
+}
+.wf-node[data-status='skipped'],
+.wf-node[data-status='canceled'] {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.wf-node__head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wf-node__kind {
+  color: var(--kind);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.wf-node__status {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.wf-node[data-status='queued'] .wf-node__status {
+  color: var(--queued);
+}
+.wf-node[data-status='running'] .wf-node__status {
+  color: var(--running);
+}
+.wf-node[data-status='succeeded'] .wf-node__status {
+  color: var(--succeeded);
+}
+.wf-node[data-status='failed'] .wf-node__status {
+  color: var(--failed);
+}
+.wf-node[data-status='skipped'] .wf-node__status {
+  color: var(--skipped);
+}
+.wf-node[data-status='canceled'] .wf-node__status {
+  color: var(--canceled);
+}
+
+.wf-node__title {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  /* Long names truncate rather than reflowing the card and shifting the whole
+     layout mid-run. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-node__summary {
+  color: var(--ink-faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-node__foot {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 14px;
+  margin-top: 6px;
+}
+
+.wf-node__result {
+  flex: 1;
+  color: var(--ink-dim);
+  font: var(--mono);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-node[data-status='failed'] .wf-node__result {
+  color: var(--failed);
+}
+
+.wf-node[data-status='skipped'] .wf-node__result {
+  color: var(--skipped);
+}
+
+.wf-node__duration {
+  color: var(--ink-faint);
+  font: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Its own layer so the glow composites without repainting the card's text. */
+.wf-node__pulse {
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--running) 40%, transparent);
+  animation: pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.wf-handle {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--bg-panel);
+  background: var(--kind);
+}
+
+.react-flow__handle-connecting {
+  background: var(--warn);
+}
+
+.react-flow__handle-valid {
+  background: var(--succeeded);
+}
+
+/* ------------------------------------------------------------------ edge -- */
+
+.wf-edge {
+  stroke: var(--line);
+  stroke-width: 1.6;
+  transition: stroke 160ms ease;
+}
+
+.wf-edge[data-state='done'] {
+  stroke: color-mix(in srgb, var(--succeeded) 55%, var(--line));
+}
+
+.wf-edge[data-state='flowing'] {
+  stroke: var(--running);
+  stroke-width: 2;
+}
+
+.wf-edge[data-state='dead'] {
+  stroke: color-mix(in srgb, var(--skipped) 40%, var(--line));
+  stroke-dasharray: 3 4;
+}
+
+.wf-edge__flow {
+  stroke: var(--running);
+  stroke-width: 2.4;
+  stroke-dasharray: 5 9;
+  animation: dash 620ms linear infinite;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--running) 60%, transparent));
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+/* ------------------------------------------------------------- inspector -- */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+}
+
+.inspector--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.inspector__placeholder {
+  max-width: 200px;
+  color: var(--ink-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+.inspector__placeholder-title {
+  margin-bottom: 4px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.inspector__head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.inspector__kind {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.inspector__kind[data-kind='input'] {
+  color: var(--kind-input);
+}
+.inspector__kind[data-kind='transform'] {
+  color: var(--kind-transform);
+}
+.inspector__kind[data-kind='output'] {
+  color: var(--kind-output);
+}
+
+.inspector__blurb {
+  margin-top: 2px;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.inspector__fields {
+  display: grid;
+  gap: 12px;
+}
+
+.inspector__run {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.inspector__run h3 {
+  color: var(--ink-faint);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.inspector__run dl {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.inspector__run dt {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.inspector__run dd {
+  min-width: 0;
+  color: var(--ink-dim);
+}
+
+.inspector__output {
+  display: block;
+  padding: 5px 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--ink);
+  font: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.inspector__error {
+  color: var(--failed);
+}
+
+/* ---------------------------------------------------------------- issues -- */
+
+.issues {
+  position: absolute;
+  bottom: 12px;
+  /* Clears React Flow's zoom controls, which sit bottom-left. */
+  left: 64px;
+  right: 12px;
+  /* …and stops the banners running under the minimap, bottom-right. */
+  max-width: 620px;
+  display: grid;
+  gap: 6px;
+  /* The container spans the canvas so its children can be full-width, but only
+     the children themselves should catch the pointer. */
+  pointer-events: none;
+  z-index: 5;
+}
+
+.issues > * {
+  pointer-events: auto;
+}
+
+.issues__banner {
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, currentcolor 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentcolor 14%, var(--bg-panel));
+  font-size: 12px;
+}
+
+.issues__banner[data-tone='error'] {
+  color: var(--failed);
+}
+
+.issues__banner[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.issues__banner strong {
+  color: inherit;
+}
+
+.issues__list {
+  max-width: 560px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.issues__toggle {
+  display: flex;
+  /* 6px, not 10px: with the 10px caret this puts the header text at the same x
+     as the issue text below it (12 + 10 + 6 === 12 + 6 + 10). */
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  /* A shade lighter than the rows, so the summary reads as a header rather
+     than as another issue. */
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.issues__caret {
+  /* Fixed box so the counts start at the same x whether the caret is pointing
+     down or right — a rotating glyph changes its own optical width. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  color: var(--ink-dim);
+  font-size: 10px;
+  transition: transform 140ms ease;
+}
+
+.issues__caret[data-collapsed] {
+  transform: rotate(-90deg);
+}
+
+.issues__count {
+  font-weight: 650;
+}
+
+/* Separate the counts with a dot rather than raw whitespace, so "3 errors" and
+   "1 warning" read as two facts instead of one run-on phrase. */
+.issues__count + .issues__count::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.issues__count[data-tone='error'] {
+  color: var(--failed);
+}
+.issues__count[data-tone='warn'] {
+  color: var(--warn);
+}
+.issues__count[data-tone='ok'] {
+  color: var(--succeeded);
+}
+
+.issues__list ul {
+  border-top: 1px solid var(--line-soft);
+  max-height: 176px;
+  overflow-y: auto;
+}
+
+.issues__list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+
+.issues__list li button {
+  display: flex;
+  gap: 10px;
+  /* flex-start, not baseline: a message that wraps to two lines should keep its
+     dot on the first line, and baseline drifts once the text reflows. */
+  align-items: flex-start;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.issues__list li button:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--ink);
+}
+
+.issues__list li button:disabled {
+  cursor: default;
+}
+
+.issues__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  /* Optically centres the dot on the first line of text (12px x 1.45 line). */
+  margin-top: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.issues__list li[data-tone='error'] .issues__dot {
+  color: var(--failed);
+}
+
+.issues__list li[data-tone='warning'] .issues__dot {
+  color: var(--warn);
+}
+
+/* ----------------------------------------------------------- empty state -- */
+
+.empty-canvas {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  /* Must not swallow drags onto the canvas underneath — only the card's button
+     is interactive. */
+  pointer-events: none;
+}
+
+.empty-canvas__card {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  max-width: 380px;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-panel) 80%, transparent);
+  text-align: center;
+  pointer-events: auto;
+}
+
+.empty-canvas__art {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.empty-canvas__art span {
+  width: 34px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--kind-input);
+  opacity: 0.85;
+}
+
+.empty-canvas__art span[data-kind='transform'] {
+  background: var(--kind-transform);
+}
+
+.empty-canvas__art span[data-kind='output'] {
+  background: var(--kind-output);
+}
+
+.empty-canvas__art i {
+  width: 16px;
+  height: 1px;
+  background: var(--line);
+}
+
+.empty-canvas h2 {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.empty-canvas p {
+  color: var(--ink-faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------- toaster -- */
+
+.toaster {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  transform: translateX(-50%);
+  z-index: 40;
+}
+
+.toast {
+  padding: 8px 13px;
+  border: 1px solid color-mix(in srgb, currentcolor 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentcolor 16%, var(--bg-panel));
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  animation: toast-in 180ms ease-out;
+}
+
+.toast[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.toast[data-tone='error'] {
+  color: var(--failed);
+}
+
+.toast[data-tone='info'] {
+  color: var(--succeeded);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Respect the OS setting — the pulse and dash animations are decorative, and
+   for some people they're actively unpleasant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Below this the three-column layout stops being usable; the panels collapse
+   to a stacked layout with the canvas taking the bulk of the height. */
+@media (max-width: 1040px) {
+  .app__body {
+    grid-template-columns: 180px 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .inspector {
+    grid-column: 1 / -1;
+    max-height: 240px;
+    border-top: 1px solid var(--line);
+  }
+}
