@@ -320,7 +320,19 @@ pnpm run format
 | [docs/decisions/](./docs/decisions/)           | ADRs — the _why_, including the options rejected          |
 | [AI_NOTES.md](./AI_NOTES.md)                   | How this was built with an agent, and where I overrode it |
 
-**On commit history:** this repo was built in a single session without git
-initialised, so there is no incremental history to read — that's a gap against
-the brief rather than a squashed history, and I'd rather say so than have it
-look like one big commit at the end.
+**On commit history — worth being straight about.** This was built in one
+continuous session, and git was initialised near the end rather than at the
+start. So the 22 commits are staged in the order the work actually happened
+(contract → rules → API → canvas → the fixes → docs) but they were _authored_ in
+one pass, not as I went. That's a deviation from the brief and I'd rather name
+it than let the log imply otherwise.
+
+Two of them are genuine before/after pairs, because those bugs really were
+written, shipped, and then found by running the app:
+
+- `fix(api): drop the SSE event: line…` — the frame-writing bug that made every
+  test and `curl -N` pass while the browser received nothing.
+- `fix(web): stop node types colliding with React Flow's built-in styles` — the
+  white card behind two of the three node kinds.
+
+The story behind both is in [AI_NOTES.md](./AI_NOTES.md).
