@@ -1,0 +1,9 @@
+{
+  // No `types`: this package is environment-agnostic and must stay that way,
+  // since both the server and the browser consume it.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"]
+  },
+  "include": ["src/**/*.ts"]
+}
