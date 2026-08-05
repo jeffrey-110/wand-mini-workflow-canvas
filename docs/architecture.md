@@ -18,22 +18,21 @@ one be derived from the right source.
 
 ## Workspace graph
 
-```
-                    ┌─────────────────┐
-                    │  @repo/types    │   the wire contract
-                    │  (no deps)      │   graph · run events · HTTP bodies
-                    └────────┬────────┘
-              ┌──────────────┼──────────────┐
-              │              │              │
-     ┌────────▼───────┐ ┌────▼─────────┐ ┌──▼──────────────┐
-     │ @repo/workflow │ │@repo/factories│ │                │
-     │ rules (pure)   │ │  fixtures     │ │                │
-     └────┬──────┬────┘ └───────────────┘ │                │
-          │      │                        │                │
-   ┌──────▼──┐ ┌─▼──────────┐             │                │
-   │@repo/api│ │ @repo/web  │─────────────┘                │
-   └─────────┘ └────────────┘                              │
-        └──────── HTTP + SSE ──────────────────────────────┘
+```mermaid
+flowchart TD
+  types["<b>@repo/types</b><br/><i>the wire contract</i><br/>graph · run events · HTTP bodies<br/><b>depends on nothing</b>"]
+  workflow["<b>@repo/workflow</b><br/><i>rules, pure</i><br/>parse · validate · topology"]
+  factories["<b>@repo/factories</b><br/><i>test fixtures</i>"]
+  api["<b>@repo/api</b><br/>validates · executes · streams"]
+  web["<b>@repo/web</b><br/>canvas editor"]
+
+  types --> workflow
+  types --> factories
+  types --> api
+  types --> web
+  workflow --> api
+  workflow --> web
+  api -. "HTTP + SSE" .-> web
 ```
 
 The boundaries are **dependency rules**, not folders:
@@ -54,9 +53,13 @@ error rather than a runtime surprise in whichever environment didn't expect it.
 
 ### Editing
 
-```
-keystroke → graph.store → useValidation (memo)   → issue list
-                       └→ canConnect (drag-time) → connection refused or allowed
+```mermaid
+flowchart LR
+  edit([keystroke / drag]) --> store[graph.store]
+  store --> memo["useValidation<br/><i>useMemo</i>"] --> issues[issue list]
+  store --> guard["canConnect<br/><i>during the drag</i>"] --> verdict{"legal?"}
+  verdict -- yes --> edge[edge created]
+  verdict -- no --> refuse["drop refused<br/>+ toast explaining why"]
 ```
 
 Validation is recomputed from the graph rather than stored beside it. There is
@@ -64,23 +67,32 @@ no invalidation to forget and no way for the two to disagree.
 
 ### Running
 
-```
-Run ─▶ POST /api/runs
-         ├─ parseWorkflow   → 400 if this isn't a workflow
-         ├─ validateWorkflow → 422 with issues[] if it isn't runnable
-         ├─ store.create(run)
-         ├─ void executeRun(...)          ← not awaited
-         └─ 201 { runId, snapshot }
-                    │
-                    ▼
-       GET /api/runs/:id/events  (EventSource)
-                    │
-   store.subscribe(run, handler, cursor)
-                    │
-   backlog (replay or snapshot) ──▶ client folds into run.store
-   live events ─────────────────▶ per-node subscribers re-render one card each
-                    │
-              run.finished ──▶ both ends close
+```mermaid
+sequenceDiagram
+  autonumber
+  participant UI as web
+  participant API as api
+  participant Store as RunStore
+  participant Sched as scheduler
+
+  UI->>API: POST /api/runs { workflow }
+  API->>API: parseWorkflow — 400 if not a workflow
+  API->>API: validateWorkflow — 422 + issues[] if not runnable
+  API->>Store: create(run)
+  API-)Sched: executeRun(run) — not awaited
+  API-->>UI: 201 { runId, snapshot }
+
+  UI->>API: GET /api/runs/:id/events (EventSource)
+  API->>Store: subscribe(run, handler, cursor)
+  Store-->>UI: backlog — replay after cursor, or one snapshot
+  loop until terminal
+    Sched->>Store: updateNode(...)
+    Store-->>UI: node.updated (id: seq)
+    Note over UI: one event re-renders one node
+  end
+  Sched->>Store: setStatus(succeeded / failed / canceled)
+  Store-->>UI: run.finished
+  Note over UI,API: both ends close
 ```
 
 The POST reports whether the run was **accepted**, not whether it succeeded.

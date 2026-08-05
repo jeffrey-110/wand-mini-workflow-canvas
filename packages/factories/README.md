@@ -24,6 +24,19 @@ would stop being a fixture and start being a second implementation.
 | `twoChainWorkflow()` | two disjoint chains | Proving a failure in one doesn't touch the other                                                                           |
 | `cyclicWorkflow()`   | `in → a → b → a`    | The cycle the validator must catch                                                                                         |
 
+The one most execution tests reach for:
+
+```mermaid
+flowchart LR
+  in([in]) --> a[a]
+  in --> b[b]
+  a --> out([out])
+  b --> out
+```
+
+`a` and `b` have no ordering between them, so a correct scheduler runs them at
+the same time — which is exactly what the concurrency tests assert.
+
 Every builder returns a _valid_ object by default and takes an override, so a
 test names only the thing it's about: `node('a', 'input', { value: '' })` reads
 as "an input with no value" rather than making the reader diff it against a wall

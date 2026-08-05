@@ -28,12 +28,20 @@ propagate" shouldn't require pressing Run until the dice cooperate.
 Four workspaces, with the boundaries drawn as dependency rules rather than as
 folders:
 
-```
-apps/api        BFF: validates, executes, streams        → @repo/types, @repo/workflow
-apps/web        React canvas editor                      → @repo/types, @repo/workflow
-packages/workflow   graph model and rules (pure)         → @repo/types
-packages/types      the wire contract                    → nothing
-packages/factories  graph fixtures for tests             → @repo/types
+```mermaid
+flowchart TD
+  types["<b>@repo/types</b><br/>the wire contract<br/><i>depends on nothing</i>"]
+  workflow["<b>@repo/workflow</b><br/>graph model and rules<br/><i>pure — no I/O, no DOM</i>"]
+  factories["<b>@repo/factories</b><br/>graph fixtures for tests"]
+  api["<b>apps/api</b><br/>BFF: validates, executes, streams"]
+  web["<b>apps/web</b><br/>React canvas editor"]
+
+  types --> workflow
+  types --> factories
+  types --> api
+  types --> web
+  workflow --> api
+  workflow --> web
 ```
 
 `@repo/types` depends on nothing, which is what stops the contract from
