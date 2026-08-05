@@ -6,6 +6,13 @@ import { NODE_KIND_META } from '@repo/workflow';
 import { useGraphStore, useIsRunActive } from '../state/index.ts';
 import { NODE_DRAG_TYPE } from './WorkflowCanvas.tsx';
 
+/** Kept in sync by hand with `hooks/useKeyboardShortcuts.ts` — it's four rows. */
+const SHORTCUTS: ReadonlyArray<{ keys: readonly string[]; label: string }> = [
+  { keys: ['⌘', '↵'], label: 'Run' },
+  { keys: ['⌘', '.'], label: 'Cancel run' },
+  { keys: ['⌫'], label: 'Delete step' },
+  { keys: ['esc'], label: 'Deselect' },
+];
 
 /**
  * Two ways to add a step, because both habits exist: drag it where you want it,
@@ -63,25 +70,21 @@ export function StepPalette() {
 
       <div className="palette__footer">
         <h3>Shortcuts</h3>
+        {/* Each row is `display: contents` inside a two-column grid, so the
+            keycap column sizes itself to the widest combination and every label
+            starts at the same x — without hard-coding a width that `esc` or a
+            two-key chord would break. */}
         <ul>
-          <li>
-            <kbd>⌘</kbd>
-            <kbd>↵</kbd>
-            <span>Run</span>
-          </li>
-          <li>
-            <kbd>⌘</kbd>
-            <kbd>.</kbd>
-            <span>Cancel run</span>
-          </li>
-          <li>
-            <kbd>⌫</kbd>
-            <span>Delete step</span>
-          </li>
-          <li>
-            <kbd>esc</kbd>
-            <span>Deselect</span>
-          </li>
+          {SHORTCUTS.map(({ keys, label }) => (
+            <li key={label}>
+              <span className="palette__keys">
+                {keys.map((key) => (
+                  <kbd key={key}>{key}</kbd>
+                ))}
+              </span>
+              <span className="palette__shortcut">{label}</span>
+            </li>
+          ))}
         </ul>
       </div>
     </nav>

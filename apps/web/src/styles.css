@@ -481,16 +481,26 @@ kbd {
    column sizes to the widest combination across *all* rows and every label
    starts at the same x. A per-row flex can't do that, which is why the labels
    used to stagger. */
-.palette__footer li {
-  display: flex;
-  gap: 4px;
+.palette__footer ul {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 7px 10px;
   align-items: center;
-  color: var(--ink-faint);
-  font-size: 11px;
 }
 
-.palette__footer li span {
-  margin-left: 4px;
+.palette__footer li {
+  display: contents;
+}
+
+.palette__keys {
+  display: flex;
+  gap: 3px;
+}
+
+.palette__shortcut {
+  color: var(--ink-faint);
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 /* ---------------------------------------------------------------- canvas -- */
