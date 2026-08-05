@@ -1,0 +1,9 @@
+{
+  // No `types`: like @repo/types, this package must run in both the browser and
+  // the server, so a stray `node:` import has to be a compile error.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"]
+  },
+  "include": ["src/**/*.ts"]
+}

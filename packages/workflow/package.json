@@ -1,0 +1,22 @@
+{
+  "name": "@repo/workflow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Graph model and rules: parsing, validation, topology, step semantics",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  }
+}
