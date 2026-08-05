@@ -45,7 +45,24 @@ type NodeDataFor<K extends NodeKind> = {
 
 export type NodeData = NodeDataFor<'input'> | NodeDataFor<'transform'> | NodeDataFor<'output'>;
 
-export type AppNode = Node<NodeData, NodeKind>;
+/**
+ * The React Flow node `type` — one value for all three kinds, and deliberately
+ * *not* named after a kind.
+ *
+ * React Flow renders every node with the class `react-flow__node-${type}`, and
+ * its stylesheet ships built-in styles for the type names `input`, `default`,
+ * `output` and `group` (white card, border, padding). Naming our types after
+ * our kinds meant Input and Output silently inherited React Flow's default card
+ * *underneath* ours — a white rectangle peeking out behind two of the three
+ * node kinds, and only those two, which is what made it look like a rendering
+ * glitch rather than a name collision.
+ *
+ * Since `data.kind` already drives everything about how a node looks, one
+ * neutral type name removes the whole class of problem.
+ */
+export const WORKFLOW_NODE_TYPE = 'workflow';
+
+export type AppNode = Node<NodeData, typeof WORKFLOW_NODE_TYPE>;
 export type AppEdge = Edge;
 
 interface GraphState {
@@ -117,7 +134,7 @@ export const useGraphStore = create<GraphState>()(
           // `kind` is a variable here, so TS can't prove `defaultConfig(kind)`
           // produces the config for *that* member of the union. One cast at the
           // single construction site, rather than at every read.
-          nodes: [...state.nodes, { id, type: kind, position, data: { kind, config: defaultConfig(kind) } as NodeData }],
+          nodes: [...state.nodes, { id, type: WORKFLOW_NODE_TYPE, position, data: { kind, config: defaultConfig(kind) } as NodeData }],
           // Select on add, so the inspector is already showing the thing the
           // user just created and they can name it without a second click.
           selectedNodeId: id,
@@ -166,7 +183,20 @@ export const useGraphStore = create<GraphState>()(
       },
     }),
     {
+      // The `.v1` is historical and part of the key's identity — changing it
+      // would orphan every saved graph and make the migration below dead code.
+      // `version` is the migration counter within that key.
       name: 'wand.canvas.v1',
+      version: 2,
+      // v1 stored the React Flow node `type` as the node kind, which collided
+      // with React Flow's built-in `input`/`output` node styles. Rewriting the
+      // type on load means an existing tab picks up the fix on refresh instead
+      // of keeping a stale white card forever.
+      migrate: (persisted, version) => {
+        const state = persisted as { nodes?: AppNode[]; edges?: AppEdge[] };
+        if (version >= 2 || !state?.nodes) return state;
+        return { ...state, nodes: state.nodes.map((node) => ({ ...node, type: WORKFLOW_NODE_TYPE })) };
+      },
       // Selection is ephemeral; the graph is not. Losing a half-built layout to
       // an accidental refresh is the kind of thing that makes a builder feel
       // untrustworthy, and it costs one line to avoid.
@@ -179,7 +209,7 @@ export const useGraphStore = create<GraphState>()(
 function exampleGraph(): Pick<GraphState, 'nodes' | 'edges' | 'selectedNodeId'> {
   const make = (id: string, kind: NodeKind, x: number, y: number, config: Partial<NodeConfig>): AppNode => ({
     id,
-    type: kind,
+    type: WORKFLOW_NODE_TYPE,
     position: { x, y },
     data: { kind, config: { ...defaultConfig(kind), ...config } } as NodeData,
   });

@@ -14,7 +14,7 @@ import { useCallback, type DragEvent } from 'react';
 import type { NodeKind } from '@repo/types';
 import { NODE_KIND_META } from '@repo/workflow';
 
-import { useGraphStore, useIsRunActive, useToastStore, type AppEdge, type AppNode } from '../state/index.ts';
+import { useGraphStore, useIsRunActive, useToastStore, WORKFLOW_NODE_TYPE, type AppEdge, type AppNode } from '../state/index.ts';
 import { CanvasEmptyState } from './CanvasEmptyState.tsx';
 import { WorkflowEdgeLine } from './WorkflowEdgeLine.tsx';
 import { WorkflowNodeCard } from './WorkflowNodeCard.tsx';
@@ -24,11 +24,9 @@ export const NODE_DRAG_TYPE = 'application/wand-node';
 
 // Defined at module scope: React Flow warns — and remounts every node,
 // discarding its DOM state — if these object identities change between renders.
-const nodeTypes = {
-  input: WorkflowNodeCard,
-  transform: WorkflowNodeCard,
-  output: WorkflowNodeCard,
-};
+// One entry, because all three kinds render through the same component and the
+// kind lives in `data`. See WORKFLOW_NODE_TYPE for why the name matters.
+const nodeTypes = { [WORKFLOW_NODE_TYPE]: WorkflowNodeCard };
 const edgeTypes = { workflow: WorkflowEdgeLine };
 const defaultEdgeOptions = { type: 'workflow' } as const;
 
