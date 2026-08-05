@@ -1,0 +1,29 @@
+{
+  "name": "mini-workflow-canvas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Visual workflow builder: compose a graph of steps, run it, watch execution stream in live",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "setup": "sh scripts/setup.sh",
+    "dev": "turbo run dev",
+    "dev:api": "pnpm --filter @repo/api dev",
+    "dev:web": "pnpm --filter @repo/web dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run typecheck",
+    "start": "pnpm --filter @repo/api start",
+    "verify": "prettier --check . && turbo run typecheck test build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.18.3"
+}

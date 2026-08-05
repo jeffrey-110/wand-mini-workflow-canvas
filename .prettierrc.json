@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "singleQuote": true,
+  "printWidth": 180,
+  "trailingComma": "all",
+  "semi": true,
+  "arrowParens": "always",
+  "proseWrap": "preserve",
+  "overrides": [
+    {
+      "files": "*.md",
+      "options": {
+        "printWidth": 80
+      }
+    }
+  ]
+}

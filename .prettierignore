@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+
+# Generated, and reformatting it would churn the diff for no benefit
+pnpm-lock.yaml
