@@ -7,7 +7,7 @@ stream back in live.
 
 <sub>Mid-run. Each step shows the value it produced and how long it took; `Cancel run` stays available until the last step settles. A finished run looks like [this](./docs/images/run-succeeded.png).</sub>
 
-**[▶ Captioned walkthrough (1:51)](./docs/walkthrough.mp4)** — building a graph, live
+**[▶ Captioned walkthrough (1:51)](./walkthrough.mp4)** — building a graph, live
 validation, a run with concurrent branches, the stream dropping and recovering from
 `Last-Event-ID`, failure propagation, and cancellation. No audio; captions throughout.
 
