@@ -1,0 +1,35 @@
+{
+  "name": "@repo/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "description": "BFF: validates workflows, executes them concurrently, streams progress over SSE",
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types src/server.ts",
+    "build": "vite build",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/workflow": "workspace:*",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@repo/factories": "workspace:*",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.13.3",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "supertest": "^7.1.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.14",
+    "vitest": "^4.1.10"
+  }
+}

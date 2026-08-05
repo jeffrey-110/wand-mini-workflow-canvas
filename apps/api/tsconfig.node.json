@@ -1,0 +1,9 @@
+{
+  // The Vite build config: run by Vite in Node, not part of the server bundle.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts", "vitest.config.ts"]
+}

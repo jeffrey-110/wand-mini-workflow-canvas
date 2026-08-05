@@ -1,0 +1,10 @@
+{
+  // Server code only. `types: ["node"]` is what makes `node:http` legal here and
+  // a compile error in @repo/web.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}
