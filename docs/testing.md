@@ -3,7 +3,7 @@
 ```bash
 pnpm run verify    # the gate: format check → typecheck → tests → build
 pnpm run test      # 84 unit tests, ~2s
-pnpm run test:e2e  # 19 browser tests, ~1m
+pnpm run test:e2e  # 19 browser tests, ~1m (fetches Chromium on first run)
 ```
 
 The brief says tests "beyond what you'd naturally write for tricky logic" aren't

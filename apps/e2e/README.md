@@ -9,8 +9,10 @@ PLAYWRIGHT_HEADLESS=1 pnpm --filter @repo/e2e test:e2e
 pnpm --filter @repo/e2e test:e2e:ui     # Playwright's UI mode
 ```
 
-Nothing needs to be running first. The suite starts `@repo/api` on `8787` and
-`@repo/web` on `5173` itself, and stops them when it's done.
+Nothing needs to be running or installed first. The suite starts `@repo/api` on
+`8787` and `@repo/web` on `5173` itself and stops them when it's done, and
+`pretest:e2e` fetches Chromium if it isn't already there — pnpm doesn't run
+Playwright's own postinstall, so a fresh clone has the package but no browser.
 
 ## Why this exists
 

@@ -5,6 +5,8 @@
   "type": "module",
   "description": "End-to-end suite: drives the real UI against the real API in a real browser",
   "scripts": {
+    "pretest:e2e": "playwright install chromium",
+    "pretest:e2e:ui": "playwright install chromium",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
