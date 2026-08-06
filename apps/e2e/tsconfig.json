@@ -1,0 +1,12 @@
+{
+  // Runs in Node, drives a browser, ships nowhere.
+  //
+  // Both libs are needed and that is deliberate: the test bodies run in Node,
+  // but `page.evaluate` callbacks are browser code and touch `localStorage`.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["playwright.config.ts", "tests/**/*.ts"]
+}
