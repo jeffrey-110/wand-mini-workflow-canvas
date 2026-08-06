@@ -25,6 +25,7 @@ flowchart TD
   factories["<b>@repo/factories</b><br/><i>test fixtures</i>"]
   api["<b>@repo/api</b><br/>validates · executes · streams"]
   web["<b>@repo/web</b><br/>canvas editor"]
+  e2e["<b>@repo/e2e</b><br/><i>browser tests</i><br/><b>imports nothing</b>"]
 
   types --> workflow
   types --> factories
@@ -33,6 +34,7 @@ flowchart TD
   workflow --> api
   workflow --> web
   api -. "HTTP + SSE" .-> web
+  e2e -. "drives a real browser" .-> web
 ```
 
 The boundaries are **dependency rules**, not folders:
@@ -44,6 +46,9 @@ The boundaries are **dependency rules**, not folders:
   than two implementations that drift.
 - `@repo/factories` depends only on types → a fixture can't drift toward one
   app's internals.
+- `@repo/e2e` depends on **nothing in this repo** → an end-to-end test can only
+  assert what a user can observe. Importing the constant the app renders from
+  would make a test that asserts a value equals itself.
 
 Both `packages/types` and `packages/workflow` declare `lib: ["ES2023"]` and no
 `types` in their tsconfig, so a stray `node:` or `document` import is a compile

@@ -12,10 +12,11 @@ layout. That means the boundaries have to earn their keep.
 
 ## Decision
 
-Four pnpm workspaces (plus test fixtures) orchestrated by Turborepo:
+Four pnpm workspaces (plus two that exist only for tests) orchestrated by
+Turborepo:
 
 ```
-apps/api   apps/web
+apps/api   apps/web   apps/e2e
 packages/types   packages/workflow   packages/factories
 ```
 
@@ -32,6 +33,10 @@ rules** that do real work:
   app's internals and quietly become a second implementation.
 - `apps/web`'s tsconfig has no `node` types; `apps/api`'s does → a stray
   `node:fs` in browser code is a compile error, not a bundle surprise.
+- `@repo/e2e` depends on **nothing in this repo** → an end-to-end test can only
+  reach the system the way a user does, over HTTP. It is a separate workspace
+  rather than a folder in `apps/web` precisely so that this rule is enforced by
+  the package boundary instead of by discipline.
 
 ## Consequences
 

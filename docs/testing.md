@@ -2,7 +2,8 @@
 
 ```bash
 pnpm run verify    # the gate: format check → typecheck → tests → build
-pnpm run test      # 84 tests, ~2s
+pnpm run test      # 84 unit tests, ~2s
+pnpm run test:e2e  # 19 browser tests, ~1m
 ```
 
 The brief says tests "beyond what you'd naturally write for tricky logic" aren't
@@ -20,6 +21,7 @@ restate the code.
 | `api/runs/scheduler.test.ts`  | 12    | Concurrency, per-branch failure, cancellation                                  |
 | `api/runs/store.test.ts`      | 10    | The event log's invariants and the resume backlog                              |
 | `api/app.test.ts`             | 25    | The real HTTP surface, including the SSE stream                                |
+| `e2e/*.spec.ts`               | 19    | The whole system in a browser: streaming, failure, cancel, resume, validation  |
 
 ### Why these and not others
 
@@ -59,6 +61,20 @@ an SSE frame makes `EventSource` dispatch a _typed_ event, delivered only to
 flawless in curl and delivers nothing to the browser. It cost real debugging
 time, and it's the kind of bug that comes back.
 
+**End to end.** That same bug is the reason `@repo/e2e` exists. It lived in the
+seam between a correct server and a correct client, where neither side's unit
+tests can reach — the only instrument that could have caught it is a browser.
+So the suite drives the real UI against the real API through the real Vite
+proxy, and its sharpest assertion is that a node is seen _running_ before it is
+seen _succeeded_: the `POST /api/runs` snapshot alone would satisfy an
+end-state check, so only an intermediate state proves the stream is alive.
+
+It is a deliberately small suite. Browser tests are the slowest and most
+brittle thing in any repo, so these cover the five things that only a browser
+can see — streaming, failure propagation, cancellation, reload recovery and
+whether validation actually blocks the Run button — and nothing that a unit test
+already covers more cheaply.
+
 ## What isn't covered, and what I'd add
 
 - **No component tests.** Nothing in `apps/web` is tested. The two I'd write
@@ -66,22 +82,22 @@ time, and it's the kind of bug that comes back.
   keystroke must be observable in `graph.store` immediately), and that a
   `node.updated` event re-renders exactly one node card, since that's the
   performance claim the whole state split rests on.
-- **No end-to-end test.** One Playwright path — load the example, run it, assert
-  every node reaches a terminal state — would cover the wiring that unit tests
-  structurally can't, including the SSE bug above.
 - **`server.ts` is excluded from coverage.** It's the composition root: it binds
   a port and wires modules that are each covered directly. A test there would
   only assert that the wiring is the wiring.
 - **No load testing.** The 500-node claims in the README are reasoned from the
   subscription model, not measured. I'd want a real profile before defending a
   specific number.
-- **The reconnect path is tested at the log level, not the browser level.** The
-  server side (cursor → backlog) is well covered; `EventSource`'s own retry
-  behaviour is exercised by hand, not automatically.
+- **`EventSource`'s own retry behaviour is not forced.** `@repo/e2e` covers
+  reload recovery — re-attaching to a run in flight, and restoring one that
+  finished while the tab was away — but killing the API mid-stream to watch the
+  browser reconnect is still a manual check.
 
 ## Conventions
 
-- Unit tests live beside the code they cover, as `*.test.ts`.
+- Unit tests live beside the code they cover, as `*.test.ts`. End-to-end tests
+  live in their own workspace, `@repo/e2e`, and import from no other workspace —
+  they assert what a user can observe, not what the app was built from.
 - Fixtures come from `@repo/factories` — named topologies (`diamondWorkflow`,
   `twoChainWorkflow`, `cyclicWorkflow`) with overridable configs, so a test
   names only the thing it is about.

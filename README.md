@@ -29,8 +29,8 @@ propagate" shouldn't require pressing Run until the dice cooperate.
 
 ## Architecture
 
-Four workspaces, with the boundaries drawn as dependency rules rather than as
-folders:
+Four workspaces, plus two that exist only for tests, with the boundaries drawn
+as dependency rules rather than as folders:
 
 ```mermaid
 flowchart TD
@@ -39,6 +39,7 @@ flowchart TD
   factories["<b>@repo/factories</b><br/>graph fixtures for tests"]
   api["<b>apps/api</b><br/>BFF: validates, executes, streams"]
   web["<b>apps/web</b><br/>React canvas editor"]
+  e2e["<b>apps/e2e</b><br/>browser tests<br/><i>imports nothing</i>"]
 
   types --> workflow
   types --> factories
@@ -46,6 +47,7 @@ flowchart TD
   types --> web
   workflow --> api
   workflow --> web
+  e2e -. "drives over HTTP" .-> web
 ```
 
 `@repo/types` depends on nothing, which is what stops the contract from
@@ -267,6 +269,24 @@ The rule underneath all of it: **polish anything that communicates state, skip
 anything that's only decoration.** This is a tool someone would keep open for
 hours, so being legible and honest matters far more than being pretty.
 
+That rule also decided what got a test. The claims above about communicating
+state are the ones a browser can check, and most of them are checked in
+`@repo/e2e`: that `skipped` and `failed` end up as different statuses saying
+different things ("Upstream step failed", not "Failed"), that controls disabled
+mid-run really are disabled and released afterwards, that the run counts come
+from the server rather than a local guess, and that a node is seen _running_ and
+not only _succeeded_.
+
+One claim on that list is still unverified: **"Reconnecting…"**. Proving it needs
+the socket killed under a page that stays open, which the suite doesn't do — the
+reload path is covered, the mid-stream drop is a manual check. It's called out
+in [apps/web/docs/testing.md](./apps/web/docs/testing.md) rather than left to be
+inferred from a passing suite.
+
+The decorative half of the list — spacing, glyphs, light mode — has no tests and
+shouldn't. A test that asserts a colour is a test that breaks when someone
+improves it.
+
 ---
 
 ## Decisions and cuts
@@ -286,9 +306,11 @@ hours, so being legible and honest matters far more than being pretty.
   space-joined string. Real ports would change the node model and the inspector
   substantially; the topology is what the exercise is about.
 - **No component tests.** The graph rules, the scheduler and the HTTP surface
-  are covered (84 tests). React components aren't — I'd add Testing Library
-  around the inspector's write-through editing and Playwright for one
-  build-a-graph-and-run-it path.
+  are covered (84 tests), and the browser is covered end to end by 19 Playwright
+  tests in `@repo/e2e`. What's missing is the layer between: React components in
+  isolation. I'd add Testing Library around the inspector's write-through
+  editing and around the claim that one `node.updated` event re-renders exactly
+  one node card.
 - **Editing is locked during a run.** There's no good answer to "you deleted a
   node that is currently running", so the canvas is read-only in flight —
   panning, zooming and selection still work. Making runs snapshot the graph at
@@ -319,7 +341,8 @@ with a diff between runs, and virtualised rendering behind
 
 ```bash
 pnpm run verify      # format check, typecheck, tests, build — the full gate
-pnpm run test        # 84 tests
+pnpm run test        # 84 unit tests, ~2s
+pnpm run test:e2e    # 19 browser tests, ~1m — starts both servers itself
 pnpm run typecheck
 pnpm run format
 ```
@@ -334,10 +357,10 @@ pnpm run format
 
 **On commit history — worth being straight about.** This was built in one
 continuous session, and git was initialised near the end rather than at the
-start. So the 22 commits are staged in the order the work actually happened
-(contract → rules → API → canvas → the fixes → docs) but they were _authored_ in
-one pass, not as I went. That's a deviation from the brief and I'd rather name
-it than let the log imply otherwise.
+start. So the 31 commits are staged in the order the work actually happened
+(contract → rules → API → canvas → the fixes → docs → the end-to-end suite) but
+they were _authored_ in one pass, not as I went. That's a deviation from the
+brief and I'd rather name it than let the log imply otherwise.
 
 Two of them are genuine before/after pairs, because those bugs really were
 written, shipped, and then found by running the app:

@@ -23,6 +23,7 @@ they are.
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `@repo/api`       | [architecture](../apps/api/docs/architecture.md) · [api-reference](../apps/api/docs/api-reference.md) · [testing](../apps/api/docs/testing.md) · [decisions](../apps/api/docs/decisions/) | [apps/api](../apps/api/README.md)                     |
 | `@repo/web`       | [frontend](../apps/web/docs/frontend.md) · [testing](../apps/web/docs/testing.md) · [decisions](../apps/web/docs/decisions/)                                                              | [apps/web](../apps/web/README.md)                     |
+| `@repo/e2e`       | —                                                                                                                                                                                         | [apps/e2e](../apps/e2e/README.md)                     |
 | `@repo/workflow`  | —                                                                                                                                                                                         | [packages/workflow](../packages/workflow/README.md)   |
 | `@repo/types`     | —                                                                                                                                                                                         | [packages/types](../packages/types/README.md)         |
 | `@repo/factories` | —                                                                                                                                                                                         | [packages/factories](../packages/factories/README.md) |
@@ -42,7 +43,8 @@ mid-flight, and a finished run.
 - **A doc lives next to what it describes.** Anything in this directory should be
   something no single workspace could own; if it drifts toward one side, it moves.
 - Known gaps are called out in place rather than collected into a footnote. The
-  largest one: **`apps/web` has no automated tests at all** — see
-  [testing.md](./testing.md).
+  largest one: **`apps/web` has no component tests** — the app is covered end to
+  end by `@repo/e2e` instead, which is a deliberate ordering rather than an
+  oversight. See [testing.md](./testing.md).
 - Anything stated as a measurement was measured. Claims that are reasoned rather
   than measured say so (the 500-node scaling notes, for instance).
